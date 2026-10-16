@@ -1,6 +1,3 @@
-import java.util.List;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 
 // Собственные типы данных
@@ -10,14 +7,16 @@ public class LogEntry {
     private String sourceIP;
     private String target;
     private String action;
+    private String original;
 
 // Создал констуктор для записи инфы. Принимает 1 входящую строку и ее 5 частей раскидвает по нужным полкам, типам информации. Сортировщик
-public LogEntry(String timestamp, String level, String sourceIP, String target, String action) {
+public LogEntry(String timestamp, String level, String sourceIP, String target, String action, String original) {
     this.timestamp = timestamp;
     this.level = level;
     this.sourceIP = sourceIP;
     this.target = target;
     this.action = action;
+    this.original = original;
 }
 // Возврат данных из закрытого доступа. Геттеры
 public String getTimestamp(){
@@ -34,5 +33,8 @@ public String getTarget(){
 }
 public String getAction(){
     return action;
+}
+public String getOriginal(){
+    return original;
 }
 }
