@@ -2,14 +2,15 @@ import java.nio.file.Path;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.ArrayList;
-import java.nio.file;
+import java.nio.file.Files; //импорт 
 import tracefinder.model.LogEntry;
 import tracefinder.model.MalformedLine;
 import tracefinder.model.LogReadResult;
 
 // TODO: Исправить импорт Files и объявление класса.
-public LogReader{
+public class LogReader{
 
     // Метод получает путь к лог-файлу и должен вернуть
     // два списка: правильные и неправильные записи.
@@ -31,6 +32,7 @@ public LogReader{
             // Счётчик строк исходного файла.
             int lineNumber = 0;
 
+
             // Читаем строки до конца файла.
             while ((line = reader.readLine()) != null) {
 
@@ -41,6 +43,7 @@ public LogReader{
                 System.out.println(line);
 
                 // TODO: Передать line в LogLineParser.
+                
                 // Парсер должен вернуть Optional<LogEntry>.
 
                 // TODO: Если запись корректная,
@@ -55,6 +58,7 @@ public LogReader{
 
         // TODO: Вернуть LogReadResult с двумя списками.
     }
+    private Optional<LogEntry> result = Optional.of();
 
     // TODO: Закрыть класс.
 }
