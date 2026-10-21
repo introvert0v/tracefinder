@@ -1,6 +1,7 @@
 import java.nio.file.Path;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.lang.classfile.instruction.LineNumber;
 import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
@@ -49,8 +50,15 @@ public class LogReader{
                 // TODO: Передать line в LogLineParser.
                 
                 // Парсер должен вернуть Optional<LogEntry>.
-
+                Optional<LogEntry> parsedLine = logLineParser(line);
                 // TODO: Если запись корректная,
+                if(parsedLine.isPresent()){
+                    parsedLine.get();
+                    valiedEntries.add(parsedLine.get());
+                }else{
+                    MalformedLine malformedLine = new MalformedLine(lineNumber, line);
+                    malformedLines.add(malformedLine);
+                }
                 // добавить LogEntry в validEntries.
 
                 // TODO: Если запись некорректная,
@@ -61,7 +69,11 @@ public class LogReader{
         }
 
         // TODO: Вернуть LogReadResult с двумя списками.
+        LogReadResult result = new LogReadResult(valiedEntries, malformedLines);
+        return result
     }
+
+
     private Optional<LogEntry> logLineParser (String line){ // пишу парсер
 
         if(line.isBlank()){ // проверка на то есть ли полностью пустые строки
