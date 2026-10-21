@@ -8,6 +8,8 @@ import java.nio.file.Files; //импорт
 import tracefinder.model.LogEntry;
 import tracefinder.model.MalformedLine;
 import tracefinder.model.LogReadResult;
+
+import java.time.DateTimeException;
 import java.time.LocalDateTime; // импорты для обработки timestamp
 import java.time.format.DateTimeFormatter;
 
@@ -78,8 +80,14 @@ public class LogReader{
         splited[3] = splited[3].trim(); 
         splited[4] = splited[4].trim(); //так как трим работает к определенному обьекту -- убираю отступы для дальнейшего обьявления корректного формата для проверки инфы
         
-        return Optional.of(new LogEntry(splited[0], splited[1], splited[2], splited[3], splited[4], line));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        try{ //проверка даты на формат: 1) все ок и оно сохраняет как хорошую строку со всемы данными. 2) не проходит проверку и улетают в контейнер с плохими строками
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime parsedTimeStamp = LocalDateTime.parse(splited[0], formatter);
+            return Optional.of(new LogEntry(splited[0], splited[1], splited[2], splited[3], splited[4], line));
+        }catch(DateTimeException e){
+            return Optional.empty();
+        }
+        
     }
 
     // TODO: Закрыть класс.
