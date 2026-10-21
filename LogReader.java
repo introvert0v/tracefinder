@@ -8,6 +8,8 @@ import java.nio.file.Files; //импорт
 import tracefinder.model.LogEntry;
 import tracefinder.model.MalformedLine;
 import tracefinder.model.LogReadResult;
+import java.time.LocalDateTime; // импорты для обработки timestamp
+import java.time.format.DateTimeFormatter;
 
 // TODO: Исправить импорт Files и объявление класса.
 public class LogReader{
@@ -60,20 +62,24 @@ public class LogReader{
     }
     private Optional<LogEntry> logLineParser (String line){ // пишу парсер
 
-        String[] splited = line.split("\\|");
         if(line.isBlank()){ // проверка на то есть ли полностью пустые строки
             return Optional.empty();
         }
+
+        String[] splited = line.split("\\|");
+        
         if(splited.length != 5){ // проверка на целостность, есть ли все елементы входящей информации
             return Optional.empty();
         }
+
         splited[0] = splited[0].trim(); 
         splited[1] = splited[1].trim(); 
         splited[2] = splited[2].trim();
         splited[3] = splited[3].trim(); 
-        splited[4] = splited[4].trim(); //так как трим работает к определенному обьекту -- убираю отступы для дальнейшей правильноый проверки формата входящих данных
+        splited[4] = splited[4].trim(); //так как трим работает к определенному обьекту -- убираю отступы для дальнейшего обьявления корректного формата для проверки инфы
         
         return Optional.of(new LogEntry(splited[0], splited[1], splited[2], splited[3], splited[4], line));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     }
 
     // TODO: Закрыть класс.
