@@ -1,60 +1,92 @@
+/*package tracefinder.reading;*/ 
 import java.nio.file.Path;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.ArrayList;
-import java.nio.file;
+import java.nio.file.Files;  
 import tracefinder.model.LogEntry;
 import tracefinder.model.MalformedLine;
 import tracefinder.model.LogReadResult;
 
-// TODO: Исправить импорт Files и объявление класса.
-public LogReader{
+import java.time.DateTimeException;
+import java.time.LocalDateTime; 
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
 
-    // Метод получает путь к лог-файлу и должен вернуть
-    // два списка: правильные и неправильные записи.
-    // IOException передаём в Main для обработки ошибки.
+public class LogReader{
+
+    
     public LogReadResult readLogs(Path logsPath) throws IOException{
 
-        // Список для корректных записей LogEntry.
-        List<LogEntry> valiedEntries = new ArrayList<>();
+        
+        List<LogEntry> validEntries = new ArrayList<>();
 
-        // Список для некорректных строк MalformedLine.
+        
         List<MalformedLine> malformedLines = new ArrayList<>();
 
-        // Открываем файл для построчного чтения.
-        // BufferedReader автоматически закрывается.
+        
         try (BufferedReader reader = Files.newBufferedReader(logsPath)) {
 
             String line;
 
-            // Счётчик строк исходного файла.
+            
             int lineNumber = 0;
 
-            // Читаем строки до конца файла.
+
+            
             while ((line = reader.readLine()) != null) {
 
-                // Учитываем каждую строку, даже пустую.
+                
                 lineNumber++;
+                Optional<LogEntry> parsedLine = logLineParser(line);
+                
+                
+                if(parsedLine.isPresent()){
+                    validEntries.add(parsedLine.get());
+                }else{
+                    MalformedLine malformedLine = new MalformedLine(lineNumber, line);
+                    malformedLines.add(malformedLine);
+                }
+                
 
-                // Временный вывод для проверки чтения.
-                System.out.println(line);
-
-                // TODO: Передать line в LogLineParser.
-                // Парсер должен вернуть Optional<LogEntry>.
-
-                // TODO: Если запись корректная,
-                // добавить LogEntry в validEntries.
-
-                // TODO: Если запись некорректная,
-                // создать MalformedLine с номером строки
-                // и исходным текстом.
-                // Добавить объект в malformedLines.
+                
             }
         }
 
-        // TODO: Вернуть LogReadResult с двумя списками.
+        
+        LogReadResult result = new LogReadResult(validEntries, malformedLines);
+        return result;
     }
 
-    // TODO: Закрыть класс.
+
+    private Optional<LogEntry> logLineParser (String line){ 
+
+        if(line.isBlank()){ 
+            return Optional.empty();
+        }
+
+        String[] splited = line.split("\\|",-1);
+        
+        if(splited.length != 5){ 
+            return Optional.empty();
+        }
+
+        splited[0] = splited[0].trim(); 
+        splited[1] = splited[1].trim(); 
+        splited[2] = splited[2].trim();
+        splited[3] = splited[3].trim(); 
+        splited[4] = splited[4].trim(); 
+        
+        try{ 
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss").withResolverStyle(ResolverStyle.STRICT);
+            LocalDateTime parsedTimeStamp = LocalDateTime.parse(splited[0], formatter);
+            return Optional.of(new LogEntry(splited[0], splited[1], splited[2], splited[3], splited[4], line));
+        }catch(DateTimeException e){
+            return Optional.empty();
+        }
+        
+    }
+
 }
