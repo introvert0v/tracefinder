@@ -34,14 +34,39 @@ public class ReportWriter {
                     Integer count = entry.getValue();
                     writer.write(action + ": " + count);
                     writer.newLine();
-                    
-                    int listFlaggedEntries = analysisResult.getFlaggedEntries().size();
-                        
-                }
 
+                    writer.write("FLAGGED ENTRIES:");
+                    writer.newLine();
+                    for (LogEntry entry : analysisResult.getFlaggedEntries()){
+                        writer.write(entry.getOriginal());
+                        writer.newLine();
+                    }
+
+                    writer.write("SUSPICIOUS IPS:");
+                    writer.newLine();
+                    for(Map.Entry<String, Integer> entry : analysisResult.getSuspiciousIPs().entrySet()){
+                        writer.write(entry.getKey() + ": " + entry.getValue());
+                        writer.newLine();
+                    }
+
+                    writer.write("UNKNOWN ENTRIES:");
+                    writer.newLine();
+                    for(LogEntry entry : analysisResult.getUnknownEntries()){
+                        writer.write(entry.getOriginal());
+                        writer.newLine();
+                    }
+
+                    writer.write("MALFORMED LINES:");
+                    writer.newLine();
+                    for(MalformedLine line : logResult.getMalformedLines()){
+                        writer.write(line.getLineNumber() + ": " + line.getOriginalLine());
+                        writer.newLine();
+                    }
+                }
+                
             }
 
-       
+    
 
         
     }
@@ -86,6 +111,6 @@ SUSPICIOUS IPS:
 192.168.1.5: 7
 
 UNKNOWN ENTRIES:
-...
+
 
 ========================================
