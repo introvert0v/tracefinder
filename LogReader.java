@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.DateTimeException;
@@ -13,27 +14,35 @@ import java.util.Optional;
 public class LogReader {
 
     public LogReadResult readLogs(Path logsPath) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(logsPath)) {
+            return readLogs(reader);
+        }
+    }
+
+    // The caller owns the supplied reader.
+    public LogReadResult readLogs(Reader input) throws IOException {
 
         List<LogEntry> validEntries = new ArrayList<>();
         List<MalformedLine> malformedLines = new ArrayList<>();
 
-        try (BufferedReader reader = Files.newBufferedReader(logsPath)) {
-            String line;
-            int lineNumber = 0;
+        BufferedReader reader = input instanceof BufferedReader
+                ? (BufferedReader) input : new BufferedReader(input);
 
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
+        String line;
+        int lineNumber = 0;
 
-                Optional<LogEntry> parsedLine = logLineParser(line);
+        while ((line = reader.readLine()) != null) {
+            lineNumber++;
 
-                if (parsedLine.isPresent()) {
-                    validEntries.add(parsedLine.get());
-                } else {
-                    MalformedLine malformedLine =
-                            new MalformedLine(lineNumber, line);
+            Optional<LogEntry> parsedLine = logLineParser(line);
 
-                    malformedLines.add(malformedLine);
-                }
+            if (parsedLine.isPresent()) {
+                validEntries.add(parsedLine.get());
+            } else {
+                MalformedLine malformedLine =
+                        new MalformedLine(lineNumber, line);
+
+                malformedLines.add(malformedLine);
             }
         }
 

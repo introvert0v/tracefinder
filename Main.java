@@ -10,7 +10,7 @@ public class Main {
         if (args.length != 3) {
             System.err.println("Error: Expected exactly 3 file paths.");
             System.err.println(
-                    "Usage: java Main logs.txt rules.csv report.txt"
+                    "Usage: java -jar target/tracefinder.jar logs.txt rules.csv report.txt"
             );
             System.exit(1);
         }
