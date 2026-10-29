@@ -1,4 +1,3 @@
-
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -15,25 +14,44 @@ public class LogProcessor {
         Map<String, Integer> suspiciousIPs = new HashMap<>();
         List<LogEntry> unknownEntries = new ArrayList<>();
 
+        Map<String, Integer> ipCounts = new HashMap<>();
+
+        for (String level : rules.keySet()) {
+            activityCounts.put(level, 0);
+        }
+
         for (LogEntry entry : logResult.getValidEntries()) {
-            String action = entry.getAction();
-            int count = activityCounts.getOrDefault(action, 0);
-            activityCounts.put(action, count +1);
+            String ip = entry.getSourceIP();
+            int ipCount = ipCounts.getOrDefault(ip, 0);
+            ipCounts.put(ip, ipCount + 1);
 
             String currentLevel = entry.getLevel();
-            Integer NumericalValue = rules.get(currentLevel); 
-        if(NumericalValue == null){
-            unknownEntries.add(entry);
-            continue;
-        }
-        if(NumericalValue >= 5){
-            flaggedEntries.add(entry);
-            String ip = entry.getSourceIP();
-            int ipCount = suspiciousIPs.getOrDefault(ip, 0);
-            suspiciousIPs.put(ip, ipCount +1);
-        }
+            Integer severityScore = rules.get(currentLevel);
+
+            if (severityScore == null) {
+                unknownEntries.add(entry);
+                continue;
+            }
+
+            int count = activityCounts.get(currentLevel);
+            activityCounts.put(currentLevel, count + 1);
+
+            if (severityScore >= 3) {
+                flaggedEntries.add(entry);
+                suspiciousIPs.put(ip, 0);
+            }
         }
 
+        for (String ip : suspiciousIPs.keySet()) {
+            suspiciousIPs.put(ip, ipCounts.get(ip));
+        }
+
+        flaggedEntries.sort((first, second) ->
+                Integer.compare(
+                        rules.get(second.getLevel()),
+                        rules.get(first.getLevel())
+                )
+        );
 
         return new AnalysisResult(
                 activityCounts,
@@ -42,4 +60,4 @@ public class LogProcessor {
                 unknownEntries
         );
     }
-} 
+}
