@@ -58,7 +58,7 @@ public class LogReader{
     }
 
 
-    private Optional<LogEntry> logLineParser (String line){ 
+     Optional<LogEntry> logLineParser (String line){ 
 
         if(line.isBlank()){ 
             return Optional.empty();
