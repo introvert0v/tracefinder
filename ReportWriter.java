@@ -1,12 +1,9 @@
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -20,11 +17,15 @@ public class ReportWriter {
             LogReadResult logResult,
             AnalysisResult analysisResult) throws IOException {
 
-        Map<String, Integer> levelCounts = new HashMap<>();
+        String report = formatReport(logResult, analysisResult);
+        Files.writeString(reportPath, report);
+    }
 
-        for (LogEntry entry : logResult.getValidEntries()) {
-            levelCounts.merge(entry.getLevel(), 1, Integer::sum);
-        }
+    public String formatReport(
+            LogReadResult logResult,
+            AnalysisResult analysisResult) {
+
+        StringBuilder report = new StringBuilder();
 
         Set<Integer> malformedNumbers = new HashSet<>();
 
@@ -40,103 +41,106 @@ public class ReportWriter {
                 currentLine++;
             }
 
-            lineNumbers.put(entry, currentLine++);
+            lineNumbers.put(entry, currentLine);
+            currentLine++;
         }
 
-        Map<String, Integer> levelPriority = Map.of(
-                "ALERT", 0,
-                "ERROR", 1,
-                "WARN", 2,
-                "INFO", 3
-        );
+        report.append("=== Log Analysis Report ===\n");
+        report.append("Generated: ");
+        report.append(LocalDateTime.now().format(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        ));
+        report.append("\n\n");
 
-        List<LogEntry> flagged =
-                new ArrayList<>(analysisResult.getFlaggedEntries());
+        report.append("--- Activity Summary ---\n");
 
-        flagged.sort(Comparator
-                .comparingInt((LogEntry entry) ->
-                        levelPriority.getOrDefault(entry.getLevel(), 4))
-                .thenComparing(LogEntry::getTimestamp));
+        Map<String, Integer> activityCounts =
+                analysisResult.getActivityCounts();
+
+        boolean hasKnownEntries = false;
+
+        for (int count : activityCounts.values()) {
+            if (count > 0) {
+                hasKnownEntries = true;
+                break;
+            }
+        }
+
+        if (!hasKnownEntries) {
+            report.append("None found\n");
+        } else {
+            List<String> levels = new ArrayList<>(activityCounts.keySet());
+            levels.sort(String::compareTo);
+
+            for (String level : levels) {
+                report.append(level);
+                report.append(": ");
+                report.append(activityCounts.get(level));
+                report.append("\n");
+            }
+        }
+
+        report.append("\n--- Flagged Entries ---\n");
+
+        if (analysisResult.getFlaggedEntries().isEmpty()) {
+            report.append("None found\n");
+        } else {
+            for (LogEntry entry : analysisResult.getFlaggedEntries()) {
+                report.append(entry.getOriginal());
+                report.append("\n");
+            }
+        }
+
+        report.append("\n--- Suspicious Activity by IP ---\n");
 
         List<Map.Entry<String, Integer>> suspiciousIPs =
-                new ArrayList<>(analysisResult.getSuspiciousIPs().entrySet());
+                new ArrayList<>(
+                        analysisResult.getSuspiciousIPs().entrySet()
+                );
 
-        suspiciousIPs.sort((first, second) -> {
-            int byCount = second.getValue().compareTo(first.getValue());
-            return byCount != 0
-                    ? byCount
-                    : first.getKey().compareTo(second.getKey());
-        });
+        suspiciousIPs.sort((first, second) ->
+                Integer.compare(second.getValue(), first.getValue())
+        );
 
-        try (BufferedWriter writer = Files.newBufferedWriter(reportPath)) {
-
-            writer.write("=== Log Analysis Report ===");
-            writer.newLine();
-
-            writer.write("Generated: " + LocalDateTime.now().format(
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-            ));
-            writer.newLine();
-            writer.newLine();
-
-            writer.write("--- Activity Summary ---");
-            writer.newLine();
-
-            for (String level : new String[]{"INFO", "WARN", "ERROR", "ALERT"}) {
-                writer.write(level + ":  " +
-                        levelCounts.getOrDefault(level, 0));
-                writer.newLine();
-            }
-
-            writer.newLine();
-
-            writer.write("--- Flagged Entries ---");
-            writer.newLine();
-
-            for (LogEntry entry : flagged) {
-                writer.write(String.format(
-                        "%s | %-5s | %-13s | %-13s | %s",
-                        entry.getTimestamp(),
-                        entry.getLevel(),
-                        entry.getSourceIP(),
-                        entry.getTarget(),
-                        entry.getAction()
-                ));
-                writer.newLine();
-            }
-
-            writer.newLine();
-
-            writer.write("--- Suspicious Activity by IP ---");
-            writer.newLine();
-
+        if (suspiciousIPs.isEmpty()) {
+            report.append("None found\n");
+        } else {
             for (Map.Entry<String, Integer> entry : suspiciousIPs) {
-                writer.write(entry.getKey() + ": "
-                        + entry.getValue() + " entries");
-                writer.newLine();
-            }
-
-            writer.newLine();
-
-            writer.write("--- Unknown Patterns ---");
-            writer.newLine();
-
-            for (LogEntry entry : analysisResult.getUnknownEntries()) {
-                writer.write("Line " + lineNumbers.get(entry)
-                        + ": " + entry.getOriginal());
-                writer.newLine();
-            }
-
-            writer.newLine();
-
-            writer.write("--- Malformed Lines ---");
-            writer.newLine();
-
-            for (MalformedLine line : logResult.getMalformedLines()) {
-                writer.write("Line " + line.getLineNumber()
-                        + ": " + line.getOriginalLine());
-                writer.newLine();
+                report.append(entry.getKey());
+                report.append(": ");
+                report.append(entry.getValue());
+                report.append(" entries\n");
             }
         }
+
+        report.append("\n--- Unknown Patterns ---\n");
+
+        if (analysisResult.getUnknownEntries().isEmpty()) {
+            report.append("None found\n");
+        } else {
+            for (LogEntry entry : analysisResult.getUnknownEntries()) {
+                report.append("Line ");
+                report.append(lineNumbers.get(entry));
+                report.append(": ");
+                report.append(entry.getOriginal());
+                report.append("\n");
+            }
+        }
+
+        report.append("\n--- Malformed Lines ---\n");
+
+        if (logResult.getMalformedLines().isEmpty()) {
+            report.append("None found\n");
+        } else {
+            for (MalformedLine line : logResult.getMalformedLines()) {
+                report.append("Line ");
+                report.append(line.getLineNumber());
+                report.append(": ");
+                report.append(line.getOriginalLine());
+                report.append("\n");
+            }
+        }
+
+        return report.toString();
     }
 }
