@@ -1,4 +1,4 @@
-/*package tracefinder.reading;*/ 
+
 import java.nio.file.Path;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.nio.file.Files;  
-import tracefinder.model.LogEntry;
-import tracefinder.model.MalformedLine;
-import tracefinder.model.LogReadResult;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime; 
